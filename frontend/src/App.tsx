@@ -1,94 +1,103 @@
-import { type FormEvent, useState } from "react"
+import { useState, useEffect } from 'react';
 
-export default function App() {
-  const [name, setName] = useState("")
-  const [message, setMessage] = useState("")
-  const [error, setError] = useState("")
-
-  async function handleSubmit(e: FormEvent) {
-    e.preventDefault()
-    setError("")
-    try {
-      const params = new URLSearchParams({ name: name || "World" })
-      const res = await fetch(`/api/hello?${params}`)
-      if (!res.ok) throw new Error(`Request failed: ${res.status}`)
-      const data: { message: string } = await res.json()
-      setMessage(data.message)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong")
-    }
-  }
-
-  return (
-    <main>
-      <h1>Samir Hossain</h1>
-      <form onSubmit={handleSubmit}>
-        <input
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder="Your name"
-        />
-        <button type="submit">Say hello</button>
-      </form>
-      {message && <p>{message}</p>}
-      {error && <p className="error">{error}</p>}
-      {/* EXERCISE (part 2): uncomment <UserForm /> and the UserForm function below. */}
-      {/* <UserForm /> */}
-    </main>
-  )
+interface Appointment {
+  id: number;
+  patient_name: string;
+  doctor_name: string;
+  date: string;
+  status: string;
 }
 
-// function UserForm() {
-//   const [form, setForm] = useState({ id: "", name: "", email: "" })
-//   const [reply, setReply] = useState("")
-//   const [error, setError] = useState("")
-//
-//   async function handleSubmit(e: FormEvent) {
-//     e.preventDefault()
-//     setError("")
-//     setReply("")
-//     try {
-//       const res = await fetch("/api/user", {
-//         method: "POST",
-//         headers: { "Content-Type": "application/json" },
-//         body: JSON.stringify({ ...form, id: Number(form.id) }),
-//       })
-//       if (!res.ok) throw new Error(`Request failed: ${res.status}`)
-//       const data: { message: string } = await res.json()
-//       setReply(data.message)
-//     } catch (err) {
-//       setError(err instanceof Error ? err.message : "Something went wrong")
-//     }
-//   }
-//
-//   return (
-//     <section>
-//       <h2>Send your details</h2>
-//       <form onSubmit={handleSubmit}>
-//         <input
-//           type="number"
-//           value={form.id}
-//           onChange={(e) => setForm({ ...form, id: e.target.value })}
-//           placeholder="ID"
-//           required
-//         />
-//         <input
-//           value={form.name}
-//           onChange={(e) => setForm({ ...form, name: e.target.value })}
-//           placeholder="Name"
-//           required
-//         />
-//         <input
-//           type="email"
-//           value={form.email}
-//           onChange={(e) => setForm({ ...form, email: e.target.value })}
-//           placeholder="Email"
-//           required
-//         />
-//         <button type="submit">Send</button>
-//       </form>
-//       {reply && <p>{reply}</p>}
-//       {error && <p className="error">{error}</p>}
-//     </section>
-//   )
-// }
+const API_URL = "http://127.0.0.1:8000/api/appointments";
+
+function App() {
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [formData, setFormData] = useState({ patient_name: '', doctor_name: '', date: '', status: 'Booked' });
+  const [editingId, setEditingId] = useState<number | null>(null);
+
+  const fetchAppointments = async () => {
+    try {
+      const response = await fetch(API_URL);
+      const data = await response.json();
+      setAppointments(data);
+    } catch (error) {
+      console.error("Error fetching data:", error);
+    }
+  };
+
+  useEffect(() => {
+    fetchAppointments();
+  }, []);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (editingId) {
+      await fetch(`${API_URL}/${editingId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
+      });
+      setEditingId(null);
+    } else {
+      await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
+      });
+    }
+    setFormData({ patient_name: '', doctor_name: '', date: '', status: 'Booked' });
+    fetchAppointments();
+  };
+
+  const handleEdit = (apt: Appointment) => {
+    setEditingId(apt.id);
+    setFormData({ patient_name: apt.patient_name, doctor_name: apt.doctor_name, date: apt.date, status: apt.status });
+  };
+
+  const handleDelete = async (id: number) => {
+    await fetch(`${API_URL}/${id}`, { method: 'DELETE' });
+    fetchAppointments();
+  };
+
+  return (
+    <div style={{ padding: '20px', fontFamily: 'sans-serif', maxWidth: '800px', margin: '0 auto' }}>
+      <h1>CareSlot - MVP Appointment Manager</h1>
+      
+      <div style={{ border: '1px solid #ccc', padding: '15px', marginBottom: '20px', borderRadius: '5px' }}>
+        <h2>{editingId ? "Edit Appointment" : "Book New Appointment"}</h2>
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          <input type="text" placeholder="Patient Name" value={formData.patient_name} onChange={(e) => setFormData({...formData, patient_name: e.target.value})} required />
+          <input type="text" placeholder="Doctor Name" value={formData.doctor_name} onChange={(e) => setFormData({...formData, doctor_name: e.target.value})} required />
+          <input type="date" value={formData.date} onChange={(e) => setFormData({...formData, date: e.target.value})} required />
+          <select value={formData.status} onChange={(e) => setFormData({...formData, status: e.target.value})}>
+            <option value="Booked">Booked</option>
+            <option value="Checked-In">Checked-In</option>
+            <option value="Completed">Completed</option>
+            <option value="Cancelled">Cancelled</option>
+          </select>
+          <button type="submit" style={{ padding: '10px', background: '#007BFF', color: 'white', border: 'none', cursor: 'pointer' }}>
+            {editingId ? "Update Appointment" : "Save Appointment"}
+          </button>
+          {editingId && <button type="button" onClick={() => { setEditingId(null); setFormData({ patient_name: '', doctor_name: '', date: '', status: 'Booked' }); }} style={{ padding: '10px', marginTop: '5px' }}>Cancel Edit</button>}
+        </form>
+      </div>
+
+      <h2>Daily Queue</h2>
+      {appointments.length === 0 ? <p>No appointments found.</p> : (
+        <ul style={{ listStyle: 'none', padding: 0 }}>
+          {appointments.map((apt) => (
+            <li key={apt.id} style={{ borderBottom: '1px solid #eee', padding: '10px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div><strong>{apt.patient_name}</strong> - Dr. {apt.doctor_name} <br/><small>{apt.date} | Status: {apt.status}</small></div>
+              <div>
+                <button onClick={() => handleEdit(apt)} style={{ marginRight: '10px', cursor: 'pointer' }}>Edit</button>
+                <button onClick={() => handleDelete(apt.id)} style={{ color: 'red', cursor: 'pointer' }}>Delete</button>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+export default App;
