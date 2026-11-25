@@ -51,14 +51,14 @@ export default function App() {
   // Auth States (Login vs Patient Sign-Up)
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
   const [regName, setRegName] = useState('');
-  const [email, setEmail] = useState('admin@careslot.com');
-  const [password, setPassword] = useState('12345678');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [authError, setAuthError] = useState('');
 
   // Admin Staff Creation Form
   const [staffName, setStaffName] = useState('');
   const [staffEmail, setStaffEmail] = useState('');
-  const [staffPassword, setStaffPassword] = useState('12345678');
+  const [staffPassword, setStaffPassword] = useState('');
   const [staffRole, setStaffRole] = useState<'doctor' | 'receptionist'>('doctor');
   const [staffSpecialty, setStaffSpecialty] = useState('');
 
