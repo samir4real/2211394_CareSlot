@@ -465,6 +465,7 @@ export default function App() {
             </div>
           </div>
         ) : (
+        <>
         {/* --- ADMIN STAFF ONBOARDING / OFFBOARDING TAB --- */}
         {activeTab === 'staff' && (user.role === 'admin' || user.role === 'super_admin') ? (
           <div className="space-y-8">
@@ -782,6 +783,7 @@ export default function App() {
             </div>
           </>
         )}
+        </>
         )}
       </main>
     </div>
