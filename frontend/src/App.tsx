@@ -4,7 +4,7 @@ interface User {
   id: number;
   name: string;
   email: string;
-  role: 'admin' | 'patient' | 'doctor' | 'receptionist';
+  role: 'super_admin' | 'admin' | 'patient' | 'doctor' | 'receptionist';
   specialty?: string;
 }
 
@@ -32,6 +32,8 @@ const API_URL = '/api';
 
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
+  const [accessToken, setAccessToken] = useState<string | null>(null);
+  const apiFetch = (path: string, init: RequestInit = {}) => fetch(`${API_URL}${path}`, { ...init, headers: { ...(init.headers || {}), ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}) } });
   const [darkMode, setDarkMode] = useState<boolean>(true);
   const [activeTab, setActiveTab] = useState<string>('home');
   
@@ -58,7 +60,7 @@ export default function App() {
   const [patientName, setPatientName] = useState('');
   const [patientEmail, setPatientEmail] = useState('');
   const [doctorName, setDoctorName] = useState('');
-  const [date, setDate] = useState('2026-11-19');
+  const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
   const [timeSlot, setTimeSlot] = useState('10:00 AM');
   const [reason, setReason] = useState('');
 
@@ -71,7 +73,7 @@ export default function App() {
   const fetchAllData = async () => {
     try {
       const [apptRes, docRes] = await Promise.all([
-        fetch(`${API_URL}/appointments`),
+        apiFetch('/appointments'),
         fetch(`${API_URL}/doctors`),
       ]);
       const apptData = await apptRes.json();
@@ -82,8 +84,8 @@ export default function App() {
         setDoctorName(docData[0].name);
       }
 
-      if (user?.role === 'admin') {
-        const staffRes = await fetch(`${API_URL}/admin/staff`);
+      if (user?.role === 'admin' || user?.role === 'super_admin') {
+        const staffRes = await apiFetch('/admin/staff');
         setAllStaff(await staffRes.json());
       }
     } catch (err) {
@@ -116,8 +118,9 @@ export default function App() {
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.detail || 'Login failed');
+        setAccessToken(data.access_token);
         setUser(data);
-        setActiveTab(data.role === 'admin' ? 'staff' : 'home');
+        setActiveTab(data.role === 'admin' || data.role === 'super_admin' ? 'staff' : 'home');
       } else {
         const res = await fetch(`${API_URL}/register`, {
           method: 'POST',
@@ -126,6 +129,7 @@ export default function App() {
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.detail || 'Registration failed');
+        setAccessToken(data.access_token);
         setUser(data);
         setActiveTab('home');
       }
@@ -136,7 +140,7 @@ export default function App() {
 
   const handleAddStaff = async (e: React.FormEvent) => {
     e.preventDefault();
-    const res = await fetch(`${API_URL}/admin/staff`, {
+    const res = await apiFetch('/admin/staff', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -159,14 +163,14 @@ export default function App() {
   };
 
   const handleRemoveStaff = async (id: number) => {
-    await fetch(`${API_URL}/admin/staff/${id}`, { method: 'DELETE' });
+    await apiFetch(`/admin/staff/${id}`, { method: 'DELETE' });
     fetchAllData();
   };
 
   const handleCreateAppointment = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!patientName || !date || !doctorName) return;
-    await fetch(`${API_URL}/appointments`, {
+    await apiFetch('/appointments', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -187,7 +191,7 @@ export default function App() {
   };
 
   const handleUpdateStatus = async (id: number, status: string) => {
-    await fetch(`${API_URL}/appointments/${id}`, {
+    await apiFetch(`/appointments/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status }),
@@ -196,7 +200,7 @@ export default function App() {
   };
 
   const handleSaveNotes = async (id: number) => {
-    await fetch(`${API_URL}/appointments/${id}`, {
+    await apiFetch(`/appointments/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ notes: noteInput }),
@@ -206,7 +210,7 @@ export default function App() {
   };
 
   const handleDeleteAppt = async (id: number) => {
-    await fetch(`${API_URL}/appointments/${id}`, { method: 'DELETE' });
+    await apiFetch(`/appointments/${id}`, { method: 'DELETE' });
     fetchAllData();
   };
 
@@ -342,34 +346,7 @@ export default function App() {
             </button>
           </form>
 
-          {authMode === 'login' && (
-            <div className={`mt-6 pt-5 border-t ${darkMode ? 'border-slate-800/80' : 'border-slate-200'}`}>
-              <p className={`text-[11px] font-semibold uppercase tracking-wider mb-2.5 ${mutedColor}`}>Quick Access Accounts (PW: 12345678):</p>
-              <div className="grid grid-cols-2 gap-2 text-xs">
-                {[
-                  { label: 'Clinic Admin', mail: 'admin@careslot.com' },
-                  { label: 'Receptionist', mail: 'reception01@careslot.com' },
-                  { label: 'Dr. Sarah', mail: 'doctor01@careslot.com' },
-                  { label: 'Patient Demo', mail: 'patient01@careslot.com' },
-                ].map((acc) => (
-                  <button
-                    key={acc.mail}
-                    type="button"
-                    onClick={() => {
-                      setEmail(acc.mail);
-                      setPassword('12345678');
-                    }}
-                    className={`px-3 py-2 rounded-xl border text-left transition cursor-pointer ${
-                      darkMode ? 'border-slate-800 bg-slate-950/40 hover:bg-slate-800' : 'border-slate-200 bg-slate-50 hover:bg-slate-100'
-                    }`}
-                  >
-                    <div className="font-semibold">{acc.label}</div>
-                    <div className={`text-[10px] truncate ${mutedColor}`}>{acc.mail}</div>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
+
         </div>
       </div>
     );
@@ -397,7 +374,7 @@ export default function App() {
               >
                 Appointments & Queue
               </button>
-              {user.role === 'admin' && (
+              {(user.role === 'admin' || user.role === 'super_admin') && (
                 <button
                   onClick={() => setActiveTab('staff')}
                   className={`py-5 border-b-2 transition cursor-pointer ${
@@ -431,7 +408,7 @@ export default function App() {
             </div>
 
             <button
-              onClick={() => setUser(null)}
+              onClick={() => { setAccessToken(null); setUser(null); }}
               className="px-3.5 py-2 rounded-xl text-xs font-semibold border border-red-500/30 text-red-400 hover:bg-red-500/10 transition cursor-pointer"
             >
               Logout
@@ -442,7 +419,7 @@ export default function App() {
 
       <main className="max-w-6xl mx-auto px-6 py-8">
         {/* --- ADMIN STAFF ONBOARDING / OFFBOARDING TAB --- */}
-        {activeTab === 'staff' && user.role === 'admin' ? (
+        {activeTab === 'staff' && (user.role === 'admin' || user.role === 'super_admin') ? (
           <div className="space-y-8">
             <div className={`rounded-2xl border p-6 shadow-xl ${cardBg}`}>
               <h2 className="text-lg font-bold mb-1">Onboard New Doctor or Receptionist</h2>
@@ -532,13 +509,13 @@ export default function App() {
               <div>
                 <h1 className="text-3xl font-extrabold tracking-tight">Welcome back, {user.name.split(' ')[0]}</h1>
                 <p className={`text-sm mt-1 ${mutedColor}`}>
-                  Role: <span className="capitalize font-semibold text-indigo-400">{user.role}</span> · Real-time SQLite Clinic Sync
+                  Role: <span className="capitalize font-semibold text-indigo-400">{user.role}</span> · Secure Clinic Sync
                 </p>
               </div>
             </div>
 
             {/* Booking Form (Patients, Receptionists, and Admin) */}
-            {(user.role === 'patient' || user.role === 'receptionist' || user.role === 'admin') && (
+            {(user.role === 'patient' || user.role === 'receptionist' || (user.role === 'admin' || user.role === 'super_admin')) && (
               <div className={`rounded-2xl border p-6 mb-8 shadow-xl ${cardBg}`}>
                 <h2 className="text-base font-bold mb-4">📅 Book an Appointment</h2>
                 <form onSubmit={handleCreateAppointment} className="space-y-4">
@@ -686,7 +663,7 @@ export default function App() {
                       </div>
 
                       <div className="flex items-center gap-2 flex-wrap">
-                        {(user.role === 'receptionist' || user.role === 'admin') && (
+                        {(user.role === 'receptionist' || (user.role === 'admin' || user.role === 'super_admin')) && (
                           <>
                             {appt.status === 'Booked' && (
                               <button
