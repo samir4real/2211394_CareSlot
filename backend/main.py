@@ -118,7 +118,7 @@ class AppointmentUpdate(BaseModel):
     notes: Optional[str] = None
 
 # --- AUTH & USER ROUTES ---
-@app.post("/login")
+@app.post("/api/login")
 def login(req: LoginRequest, db: Session = Depends(get_db)):
     user = db.query(UserDB).filter(
         UserDB.email == req.email,
@@ -129,7 +129,7 @@ def login(req: LoginRequest, db: Session = Depends(get_db)):
         raise HTTPException(status_code=401, detail="Invalid credentials or deactivated account")
     return {"id": user.id, "name": user.name, "email": user.email, "role": user.role, "specialty": user.specialty}
 
-@app.post("/register")
+@app.post("/api/register")
 def register_patient(req: PatientRegisterRequest, db: Session = Depends(get_db)):
     existing = db.query(UserDB).filter(UserDB.email == req.email).first()
     if existing:
@@ -146,17 +146,17 @@ def register_patient(req: PatientRegisterRequest, db: Session = Depends(get_db))
     db.refresh(new_patient)
     return {"id": new_patient.id, "name": new_patient.name, "email": new_patient.email, "role": new_patient.role}
 
-@app.get("/doctors")
+@app.get("/api/doctors")
 def get_active_doctors(db: Session = Depends(get_db)):
     doctors = db.query(UserDB).filter(UserDB.role == "doctor", UserDB.is_active == True).all()
     return [{"id": d.id, "name": d.name, "email": d.email, "specialty": d.specialty} for d in doctors]
 
-@app.get("/admin/staff")
+@app.get("/api/admin/staff")
 def get_all_staff(db: Session = Depends(get_db)):
     staff = db.query(UserDB).filter(UserDB.role.in_(["doctor", "receptionist"]), UserDB.is_active == True).all()
     return [{"id": s.id, "name": s.name, "email": s.email, "role": s.role, "specialty": s.specialty} for s in staff]
 
-@app.post("/admin/staff")
+@app.post("/api/admin/staff")
 def add_staff(req: StaffCreateRequest, db: Session = Depends(get_db)):
     if req.role not in ["doctor", "receptionist"]:
         raise HTTPException(status_code=400, detail="Role must be doctor or receptionist")
@@ -176,7 +176,7 @@ def add_staff(req: StaffCreateRequest, db: Session = Depends(get_db)):
     db.refresh(new_staff)
     return {"id": new_staff.id, "name": new_staff.name, "email": new_staff.email, "role": new_staff.role, "specialty": new_staff.specialty}
 
-@app.delete("/admin/staff/{user_id}")
+@app.delete("/api/admin/staff/{user_id}")
 def remove_staff(user_id: int, db: Session = Depends(get_db)):
     staff = db.query(UserDB).filter(UserDB.id == user_id).first()
     if not staff:
@@ -187,11 +187,11 @@ def remove_staff(user_id: int, db: Session = Depends(get_db)):
     return {"message": f"{staff.name} has been offboarded"}
 
 # --- APPOINTMENT ROUTES ---
-@app.get("/appointments")
+@app.get("/api/appointments")
 def get_appointments(db: Session = Depends(get_db)):
     return db.query(AppointmentDB).all()
 
-@app.post("/appointments")
+@app.post("/api/appointments")
 def create_appointment(appt: AppointmentCreate, db: Session = Depends(get_db)):
     new_appt = AppointmentDB(**appt.dict(), status="Booked")
     db.add(new_appt)
@@ -199,7 +199,7 @@ def create_appointment(appt: AppointmentCreate, db: Session = Depends(get_db)):
     db.refresh(new_appt)
     return new_appt
 
-@app.put("/appointments/{appt_id}")
+@app.put("/api/appointments/{appt_id}")
 def update_appointment(appt_id: int, updates: AppointmentUpdate, db: Session = Depends(get_db)):
     appt = db.query(AppointmentDB).filter(AppointmentDB.id == appt_id).first()
     if not appt:
@@ -210,7 +210,7 @@ def update_appointment(appt_id: int, updates: AppointmentUpdate, db: Session = D
     db.refresh(appt)
     return appt
 
-@app.delete("/appointments/{appt_id}")
+@app.delete("/api/appointments/{appt_id}")
 def delete_appointment(appt_id: int, db: Session = Depends(get_db)):
     appt = db.query(AppointmentDB).filter(AppointmentDB.id == appt_id).first()
     if not appt:
