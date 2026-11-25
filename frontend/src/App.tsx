@@ -28,7 +28,7 @@ interface Appointment {
   status: 'Booked' | 'Checked-In' | 'Completed' | 'Cancelled';
 }
 
-const API_URL = 'http://localhost:8000';
+const API_URL = '/api';
 
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
