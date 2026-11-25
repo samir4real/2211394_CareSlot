@@ -16,6 +16,8 @@ interface StaffMember {
   specialty?: string;
 }
 
+interface AdminAccount { id: number; name: string; email: string; role: 'admin' | 'super_admin'; }
+
 interface Appointment {
   id: number;
   patient_name: string;
@@ -41,6 +43,10 @@ export default function App() {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [activeDoctors, setActiveDoctors] = useState<StaffMember[]>([]);
   const [allStaff, setAllStaff] = useState<StaffMember[]>([]);
+  const [admins, setAdmins] = useState<AdminAccount[]>([]);
+  const [adminName, setAdminName] = useState('');
+  const [adminEmail, setAdminEmail] = useState('');
+  const [adminPassword, setAdminPassword] = useState('');
 
   // Auth States (Login vs Patient Sign-Up)
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
@@ -86,7 +92,11 @@ export default function App() {
 
       if (user?.role === 'admin' || user?.role === 'super_admin') {
         const staffRes = await apiFetch('/admin/staff');
-        setAllStaff(await staffRes.json());
+        if (staffRes.ok) setAllStaff(await staffRes.json());
+      }
+      if (user?.role === 'super_admin') {
+        const adminsRes = await apiFetch('/admin/admins');
+        if (adminsRes.ok) setAdmins(await adminsRes.json());
       }
     } catch (err) {
       console.error('Error syncing data:', err);
@@ -160,6 +170,22 @@ export default function App() {
       const err = await res.json();
       alert(err.detail || 'Failed to add staff');
     }
+  };
+
+  const handleCreateAdmin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const res = await apiFetch('/admin/admins', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: adminName, email: adminEmail, password: adminPassword }) });
+    const data = await res.json();
+    if (!res.ok) { alert(data.detail || 'Failed to create admin'); return; }
+    setAdminName(''); setAdminEmail(''); setAdminPassword('');
+    fetchAllData();
+  };
+
+  const handleDeactivateAdmin = async (id: number) => {
+    if (!window.confirm('Deactivate this secondary admin account?')) return;
+    const res = await apiFetch(`/admin/admins/${id}`, { method: 'DELETE' });
+    if (!res.ok) { const data = await res.json(); alert(data.detail || 'Failed to deactivate admin'); return; }
+    fetchAllData();
   };
 
   const handleRemoveStaff = async (id: number) => {
@@ -384,6 +410,9 @@ export default function App() {
                   Staff Management (HR)
                 </button>
               )}
+              {user.role === 'super_admin' && (
+                <button onClick={() => setActiveTab('admins')} className={`py-5 border-b-2 transition cursor-pointer ${activeTab === 'admins' ? 'border-indigo-500 text-indigo-500' : `border-transparent ${mutedColor}`}`}>Admin Management</button>
+              )}
             </nav>
           </div>
 
@@ -418,6 +447,24 @@ export default function App() {
       </header>
 
       <main className="max-w-6xl mx-auto px-6 py-8">
+        {activeTab === 'admins' && user.role === 'super_admin' ? (
+          <div className="space-y-8">
+            <div className={`rounded-2xl border p-6 shadow-xl ${cardBg}`}>
+              <h2 className="text-lg font-bold mb-1">Create Secondary Admin</h2>
+              <p className={`text-xs mb-5 ${mutedColor}`}>Secondary admins can manage clinic staff and appointments, but cannot create or deactivate admins.</p>
+              <form onSubmit={handleCreateAdmin} className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+                <input value={adminName} onChange={e => setAdminName(e.target.value)} placeholder="Full name" className={`px-3.5 py-2.5 rounded-xl border text-sm outline-none ${inputStyle}`} minLength={2} maxLength={120} required />
+                <input type="email" value={adminEmail} onChange={e => setAdminEmail(e.target.value)} placeholder="Admin email" className={`px-3.5 py-2.5 rounded-xl border text-sm outline-none ${inputStyle}`} required />
+                <input type="password" value={adminPassword} onChange={e => setAdminPassword(e.target.value)} placeholder="Initial password (12+ characters)" className={`px-3.5 py-2.5 rounded-xl border text-sm outline-none ${inputStyle}`} minLength={12} maxLength={128} required />
+                <button type="submit" className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold">Create Admin</button>
+              </form>
+            </div>
+            <div className={`rounded-2xl border p-6 shadow-xl ${cardBg}`}>
+              <h2 className="text-lg font-bold mb-4">Active Administrators ({admins.length})</h2>
+              <div className="space-y-3">{admins.map(admin => <div key={admin.id} className={`flex items-center justify-between gap-4 p-4 rounded-xl border ${darkMode ? 'border-slate-800 bg-slate-950/50' : 'border-slate-200 bg-slate-50'}`}><div><div className="font-bold text-sm">{admin.name} <span className="ml-2 text-[10px] uppercase text-indigo-400">{admin.role.replace('_', ' ')}</span></div><div className={`text-xs mt-1 ${mutedColor}`}>{admin.email}</div></div>{admin.role === 'admin' && <button onClick={() => handleDeactivateAdmin(admin.id)} className="px-3.5 py-2 rounded-xl border border-red-500/30 text-red-400 text-xs font-semibold">Deactivate</button>}</div>)}</div>
+            </div>
+          </div>
+        ) : (
         {/* --- ADMIN STAFF ONBOARDING / OFFBOARDING TAB --- */}
         {activeTab === 'staff' && (user.role === 'admin' || user.role === 'super_admin') ? (
           <div className="space-y-8">
@@ -734,6 +781,7 @@ export default function App() {
               )}
             </div>
           </>
+        )}
         )}
       </main>
     </div>
