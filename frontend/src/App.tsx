@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import type { User, StaffMember, AdminAccount, Appointment } from './types';
 import { API_URL } from './services/api';
-
+import StatsCards from './components/StatsCards';
 
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
@@ -607,20 +607,13 @@ export default function App() {
             )}
 
             {/* KPI Summary Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-6">
-              <div className={`rounded-2xl border p-6 shadow-lg ${cardBg}`}>
-                <div className={`text-xs font-semibold uppercase mb-1 ${mutedColor}`}>Booked</div>
-                <div className="text-3xl font-extrabold text-indigo-500">🕒 {bookedCount}</div>
-              </div>
-              <div className={`rounded-2xl border p-6 shadow-lg ${cardBg}`}>
-                <div className={`text-xs font-semibold uppercase mb-1 ${mutedColor}`}>Checked-In</div>
-                <div className="text-3xl font-extrabold text-amber-500">🩺 {checkedInCount}</div>
-              </div>
-              <div className={`rounded-2xl border p-6 shadow-lg ${cardBg}`}>
-                <div className={`text-xs font-semibold uppercase mb-1 ${mutedColor}`}>Completed</div>
-                <div className="text-3xl font-extrabold text-emerald-500">✅ {completedCount}</div>
-              </div>
-            </div>
+            <StatsCards
+  cardBg={cardBg}
+  mutedColor={mutedColor}
+  bookedCount={bookedCount}
+  checkedInCount={checkedInCount}
+  completedCount={completedCount}
+/>
 
             {/* Progress Bar */}
             <div className={`rounded-2xl border p-4 mb-6 shadow-md flex items-center gap-4 ${cardBg}`}>
