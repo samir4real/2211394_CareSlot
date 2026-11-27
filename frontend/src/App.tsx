@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import type { User, StaffMember, AdminAccount, Appointment } from './types';
 import { API_URL } from './services/api';
 import StatsCards from './components/StatsCards';
+import ProgressBar from './components/ProgressBar';
 
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
@@ -616,12 +617,12 @@ export default function App() {
 />
 
             {/* Progress Bar */}
-            <div className={`rounded-2xl border p-4 mb-6 shadow-md flex items-center gap-4 ${cardBg}`}>
-              <div className={`flex-1 h-2.5 rounded-full overflow-hidden ${darkMode ? 'bg-slate-950' : 'bg-slate-200'}`}>
-                <div className="h-full bg-indigo-600 transition-all duration-500" style={{ width: `${completionRate}%` }} />
-              </div>
-              <span className={`text-xs font-bold ${mutedColor}`}>{completionRate}% Completed</span>
-            </div>
+<ProgressBar
+  cardBg={cardBg}
+  darkMode={darkMode}
+  mutedColor={mutedColor}
+  completionRate={completionRate}
+/>
 
             {/* Search & Filter */}
             <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
