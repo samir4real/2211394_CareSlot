@@ -3,6 +3,7 @@ import type { User, StaffMember, AdminAccount, Appointment } from './types';
 import { API_URL } from './services/api';
 import StatsCards from './components/StatsCards';
 import ProgressBar from './components/ProgressBar';
+import AppointmentFilters from './components/AppointmentFilters';
 
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
@@ -625,28 +626,14 @@ export default function App() {
 />
 
             {/* Search & Filter */}
-            <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
-              <input
-                type="text"
-                placeholder="Search patient, doctor, or reason..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className={`w-full sm:w-80 px-4 py-2.5 rounded-xl border text-sm outline-none ${inputStyle}`}
-              />
-              <div className="flex items-center gap-1.5 text-xs font-medium">
-                {['All', 'Booked', 'Checked-In', 'Completed', 'Cancelled'].map((status) => (
-                  <button
-                    key={status}
-                    onClick={() => setStatusFilter(status)}
-                    className={`px-3.5 py-2 rounded-xl transition cursor-pointer ${
-                      statusFilter === status ? 'bg-indigo-600 text-white' : mutedColor
-                    }`}
-                  >
-                    {status}
-                  </button>
-                ))}
-              </div>
-            </div>
+            <AppointmentFilters
+  searchQuery={searchQuery}
+  setSearchQuery={setSearchQuery}
+  statusFilter={statusFilter}
+  setStatusFilter={setStatusFilter}
+  inputStyle={inputStyle}
+  mutedColor={mutedColor}
+/>
 
             {/* Appointments List */}
             <div className="space-y-4">
