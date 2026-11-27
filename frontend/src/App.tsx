@@ -5,6 +5,8 @@ import StatsCards from './components/StatsCards';
 import ProgressBar from './components/ProgressBar';
 import AppointmentFilters from './components/AppointmentFilters';
 import AppointmentList from './components/AppointmentList';
+import Groups from './components/Groups';
+
 
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
@@ -386,7 +388,18 @@ export default function App() {
               )}
               {user.role === 'super_admin' && (
                 <button onClick={() => setActiveTab('admins')} className={`py-5 border-b-2 transition cursor-pointer ${activeTab === 'admins' ? 'border-indigo-500 text-indigo-500' : `border-transparent ${mutedColor}`}`}>Admin Management</button>
-              )}
+              )} 
+              <button
+  onClick={() => setActiveTab('groups')}
+  className={`py-5 border-b-2 transition cursor-pointer ${
+    activeTab === 'groups'
+      ? 'border-indigo-500 text-indigo-500'
+      : `border-transparent ${mutedColor}`
+  }`}
+>
+  Groups
+</button>
+              
             </nav>
           </div>
 
@@ -441,7 +454,9 @@ export default function App() {
         ) : (
         <>
         {/* --- ADMIN STAFF ONBOARDING / OFFBOARDING TAB --- */}
-        {activeTab === 'staff' && (user.role === 'admin' || user.role === 'super_admin') ? (
+        {activeTab === 'groups' ? (
+  <Groups darkMode={darkMode} userName={user.name} />
+) : activeTab === 'staff' && (user.role === 'admin' || user.role === 'super_admin') ? (
           <div className="space-y-8">
             <div className={`rounded-2xl border p-6 shadow-xl ${cardBg}`}>
               <h2 className="text-lg font-bold mb-1">Onboard New Doctor or Receptionist</h2>
