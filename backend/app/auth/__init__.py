@@ -1,12 +1,17 @@
 
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.models import UserDB
 from app.schemas import LoginRequest, PatientRegisterRequest
-from app.services.auth_service import hash_password
-
+from app.auth.security import (
+    issue_token,
+    user_payload,
+    password_hasher,
+    verify_password_and_upgrade,
+)
 
 router = APIRouter()
 
@@ -14,23 +19,22 @@ router = APIRouter()
 @router.post("/login")
 def login(req: LoginRequest, db: Session = Depends(get_db)):
     user = db.query(UserDB).filter(
-        UserDB.email == req.email,
-        UserDB.password == hash_password(req.password),
-        UserDB.is_active == True
+        UserDB.email == req.email.lower(),
+        UserDB.is_active.is_(True)
     ).first()
 
-    if not user:
+    if not user or not verify_password_and_upgrade(
+        req.password, user.password or "", user, db
+    ):
         raise HTTPException(
             status_code=401,
             detail="Invalid credentials or deactivated account"
         )
 
     return {
-        "id": user.id,
-        "name": user.name,
-        "email": user.email,
-        "role": user.role,
-        "specialty": user.specialty
+        **user_payload(user),
+        "access_token": issue_token(user),
+        "token_type": "bearer"
     }
 
 
@@ -39,8 +43,10 @@ def register_patient(
     req: PatientRegisterRequest,
     db: Session = Depends(get_db)
 ):
+    email = req.email.lower()
+
     existing = db.query(UserDB).filter(
-        UserDB.email == req.email
+        UserDB.email == email
     ).first()
 
     if existing:
@@ -50,9 +56,9 @@ def register_patient(
         )
 
     new_patient = UserDB(
-        name=req.name,
-        email=req.email,
-        password=hash_password(req.password),
+        name=req.name.strip(),
+        email=email,
+        password=password_hasher.hash(req.password),
         role="patient",
         is_active=True
     )
@@ -62,8 +68,7 @@ def register_patient(
     db.refresh(new_patient)
 
     return {
-        "id": new_patient.id,
-        "name": new_patient.name,
-        "email": new_patient.email,
-        "role": new_patient.role
+        **user_payload(new_patient),
+        "access_token": issue_token(new_patient),
+        "token_type": "bearer"
     }

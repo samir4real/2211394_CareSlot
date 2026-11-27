@@ -9,6 +9,7 @@ from app.services.auth_service import hash_password
 from app.auth import router as auth_router
 from app.doctors import router as doctors_router
 from app.staff import router as staff_router
+from app.admin import router as admin_router
 from app.appointments import router as appointments_router
 
 
@@ -28,16 +29,17 @@ app.add_middleware(
         "https://2211394.vercel.app"
     ],
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type"],
 )
 
 
 # Register API routers
-app.include_router(auth_router)
-app.include_router(doctors_router)
-app.include_router(staff_router)
-app.include_router(appointments_router)
+app.include_router(auth_router, prefix="/api")
+app.include_router(doctors_router, prefix="/api")
+app.include_router(staff_router, prefix="/api")
+app.include_router(admin_router, prefix="/api")
+app.include_router(appointments_router, prefix="/api")
 
 
 # Seed initial system accounts
