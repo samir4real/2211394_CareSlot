@@ -80,7 +80,7 @@ export default function App() {
     try {
       const [apptRes, docRes] = await Promise.all([
         apiFetch('/appointments'),
-        fetch(`${API_URL}/doctors`),
+        apiFetch('/doctors'),
       ]);
       const apptData = await apptRes.json();
       const docData = await docRes.json();
