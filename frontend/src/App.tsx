@@ -1,36 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import type { User, StaffMember, AdminAccount, Appointment } from './types';
+import { API_URL } from './services/api';
 
-interface User {
-  id: number;
-  name: string;
-  email: string;
-  role: 'super_admin' | 'admin' | 'patient' | 'doctor' | 'receptionist';
-  specialty?: string;
-}
-
-interface StaffMember {
-  id: number;
-  name: string;
-  email: string;
-  role: 'doctor' | 'receptionist';
-  specialty?: string;
-}
-
-interface AdminAccount { id: number; name: string; email: string; role: 'admin' | 'super_admin'; }
-
-interface Appointment {
-  id: number;
-  patient_name: string;
-  patient_email: string;
-  doctor_name: string;
-  date: string;
-  time_slot: string;
-  reason: string;
-  notes: string;
-  status: 'Booked' | 'Checked-In' | 'Completed' | 'Cancelled';
-}
-
-const API_URL = '/api';
 
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
